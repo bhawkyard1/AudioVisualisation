@@ -1,4 +1,4 @@
-TARGET = PoetryGenerator
+TARGET = AudioVisualisation
 
 OBJECTS_DIR = obj
 
