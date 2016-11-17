@@ -448,7 +448,8 @@ compiler_clean:
 
 ####### Compile
 
-obj/main.o: main.cpp include/fft.hpp
+obj/main.o: main.cpp include/fft.hpp \
+		include/sampler.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/main.o main.cpp
 
 obj/fft.o: src/fft.cpp include/fft.hpp

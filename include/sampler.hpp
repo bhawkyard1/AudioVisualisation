@@ -11,12 +11,17 @@
 class sampler
 {
 public:
-    static void initialiseAudio(const int _rate);
+    static void initialiseAudio(const int _rate, const int _channels);
     sampler(const std::string _path);
-    void sampleAudio(const float _start, const float _end);
+    ~sampler();
+    Mix_Chunk * get() {return m_snd;}
+    float getLenSecs() const {return m_len;}
+    std::vector<float> sampleAudio(const float _start, const float _end);
 private:
     Mix_Chunk * m_snd;
-    static int m_sampleRate;
+    float m_len;
+    static int s_sampleRate;
+    static int s_channels;
 };
 
 #endif

@@ -2,14 +2,14 @@
 
 // Cooley–Tukey FFT (in-place, divide-and-conquer)
 // Higher memory requirements and redundancy although more intuitive
-void fft(CArray& x)
+void fft(CArray& _x)
 {
-    const size_t N = x.size();
+    const size_t N = _x.size();
     if (N <= 1) return;
 
     // divide
-    CArray even = x[std::slice(0, N/2, 2)];
-    CArray  odd = x[std::slice(1, N/2, 2)];
+    CArray even = _x[std::slice(0, N/2, 2)];
+    CArray  odd = _x[std::slice(1, N/2, 2)];
 
     // conquer
     fft(even);
@@ -18,8 +18,13 @@ void fft(CArray& x)
     // combine
     for (size_t k = 0; k < N/2; ++k)
     {
-        Complex t = std::polar(1.0, -2 * PI * k / N) * odd[k];
-        x[k    ] = even[k] + t;
-        x[k+N/2] = even[k] - t;
+        Complex t = std::polar(1.0f, static_cast<float>(-2 * PI * k / N)) * odd[k];
+        _x[k    ] = even[k] + t;
+        _x[k+N/2] = even[k] - t;
     }
+}
+
+float magnitude(Complex &_x)
+{
+    return sqrt(_x.real() * _x.real() + _x.imag() * _x.imag());
 }
