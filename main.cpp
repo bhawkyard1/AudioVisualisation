@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include "fft.hpp"
@@ -24,7 +25,7 @@ int main(int argc, char * argv[])
         exit(EXIT_FAILURE);
     }
 
-    gwin = SDL_CreateWindow("vis", 100, 100, 1024, 1024, SDL_WINDOW_RESIZABLE);
+    gwin = SDL_CreateWindow("vis", 512, 100, 1024, 1024, SDL_WINDOW_RESIZABLE);
     gren = SDL_CreateRenderer(gwin, -1, NULL);
     SDL_ShowWindow(gwin);
     SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
@@ -92,7 +93,8 @@ int main(int argc, char * argv[])
     SDL_PauseAudio(0);
     while(remainingLen > 0)
     {
-        SDL_Delay(100);
+        continue;
+        //SDL_Delay(100);
     }
 
     SDL_CloseAudio();
@@ -105,18 +107,19 @@ int main(int argc, char * argv[])
     return 0;
 }
 
-void playcallback(void *userdata, Uint8 *stream, int len) {
-
+void playcallback(void *userdata, Uint8 *stream, int len)
+{
     if (remainingLen == 0)
         return;
 
-    if(len > remainingLen)
-        len = remainingLen;
-    else
-        len = len;
+    len = std::min( (Uint32)len, remainingLen );
 
     //len = ( len > remainingLen ? remainingLen : len );
     std::cout << len << '\n';
+
+    std::vector<Uint8> snd;
+    for(int i = 0; i < len; ++i)
+        snd.push_back( rand() );
 
     SDL_MixAudio(stream, audioPos, len, SDL_MIX_MAXVOLUME);// mix from one buffer into another
 
