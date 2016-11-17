@@ -6,11 +6,6 @@
 
 #define MUS_PATH "red_laser_0.wav"
 
-Uint8 * audioPos;
-Uint32 remainingLen;
-
-void playcallback(void *userdata, Uint8 *stream, int len);
-
 SDL_Window * gwin;
 SDL_Renderer * gren;
 
@@ -34,44 +29,31 @@ int main(int argc, char * argv[])
 
     std::cout << "Number of playback devices : " << SDL_GetNumAudioDevices( 0 ) << '\n';
 
-    /*if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 4096 ) < 0)
+    if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 4096 ) < 0)
     {
         std::cout << "Mix_OpenAudio error : " << Mix_GetError() << '\n';
         exit(EXIT_FAILURE);
-    }*/
+    }
 
-    SDL_AudioSpec wavSpec;
-    Uint32 wavLen;
-    Uint8 * wavBuf;
+    Mix_Chunk * snd = Mix_LoadWAV(MUS_PATH);
 
-    if(SDL_LoadWAV(MUS_PATH, &wavSpec, &wavBuf, &wavLen) == 0)
+    if(!snd)
     {
         std::cerr << "Could not open " << MUS_PATH << " : " << SDL_GetError() << '\n';
         exit(EXIT_FAILURE);
     }
 
-    wavSpec.callback = playcallback;
-    wavSpec.userdata = NULL;
-    audioPos = wavBuf;
-    remainingLen = wavLen;
+    int len = snd->alen / 44100.0f;
 
-    if(SDL_OpenAudio(&wavSpec, NULL) != 0)
-    {
-        std::cerr << "Couldn't open audio! " << SDL_GetError() << '\n';
-        exit(EXIT_FAILURE);
-    }
-
-    int len = 1024;//wavLen / sizeof(Uint8);
-
-    std::cout << "Buffer analysis...\nLen : " << len << "Secs : " << (len / 44100.0f) << "\nContinue?\n";
+    std::cout << "Buffer analysis...\nLen : " << snd->alen << " || " << len << "\nSecs : " << (snd->alen / (2 * 44100.0f)) << "\nContinue?\n";
 
     std::cin.get();
 
-    /*std::valarray<Complex> arr;
+    std::valarray<Complex> arr;
     arr.resize( len, {0.0, 0.0} );
-    for(int i = 0; i < len; ++i)
+    for(int i = 0; i < arr.size(); ++i)
     {
-        Complex insert = {(double)wavBuf[i], 0.0};
+        Complex insert = {(double)snd->abuf[i], 0.0};
         arr[i] = insert;
     }
 
@@ -80,49 +62,30 @@ int main(int argc, char * argv[])
     fft(arr);
     std::cout << "FFT complete.";
 
-    for(int i = 0; i < len; ++i)
+    for(int i = 0; i < arr.size(); ++i)
     {
         std::cout << "fft[" << i << "] " << arr[i].real() << ", " << arr[i].imag() << '\n';
     }
 
-    for(int i = 0; i < len / 2 - 1; ++i)
+    for(int i = 0; i < arr.size() / 2 - 1; ++i)
     {
         std::cout << "Amplitude at " << i * 44100.0f / 1024.0f << "hz is " << sqrt(arr[i].real() * arr[i].real() + arr[i].imag() * arr[i].imag()) << '\n';
-    }*/
-
-    SDL_PauseAudio(0);
-    while(remainingLen > 0)
-    {
-        continue;
-        //SDL_Delay(100);
     }
 
-    SDL_CloseAudio();
-    SDL_FreeWAV(wavBuf);
+    Mix_PlayChannel(-1, snd, 0);
+
+    std::cout << "Press enter to quit.\n";
+    std::cin.get();
+
+    Mix_FreeChunk(snd);
+    Mix_CloseAudio();
+
     SDL_DestroyRenderer(gren);
     SDL_DestroyWindow(gwin);
+
+    SDL_Quit();
 
     std::cout << "Complete!\n";
 
     return 0;
-}
-
-void playcallback(void *userdata, Uint8 *stream, int len)
-{
-    if (remainingLen == 0)
-        return;
-
-    len = std::min( (Uint32)len, remainingLen );
-
-    //len = ( len > remainingLen ? remainingLen : len );
-    std::cout << len << '\n';
-
-    std::vector<Uint8> snd;
-    for(int i = 0; i < len; ++i)
-        snd.push_back( rand() );
-
-    SDL_MixAudio(stream, audioPos, len, SDL_MIX_MAXVOLUME);// mix from one buffer into another
-
-    audioPos += len;
-    remainingLen -= len;
 }
