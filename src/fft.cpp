@@ -16,7 +16,7 @@ void fft(CArray& _x)
     fft(odd);
 
     // combine
-    for (size_t k = 0; k < N/2; ++k)
+    for (size_t k = 0; k < N / 2; ++k)
     {
         Complex t = std::polar(1.0f, static_cast<float>(-2 * PI * k / N)) * odd[k];
         _x[k    ] = even[k] + t;

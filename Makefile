@@ -449,7 +449,8 @@ compiler_clean:
 ####### Compile
 
 obj/main.o: main.cpp include/fft.hpp \
-		include/sampler.hpp
+		include/sampler.hpp \
+		include/sim_time.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/main.o main.cpp
 
 obj/fft.o: src/fft.cpp include/fft.hpp

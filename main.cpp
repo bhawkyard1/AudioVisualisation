@@ -4,8 +4,9 @@
 #include <SDL2/SDL_mixer.h>
 #include "fft.hpp"
 #include "sampler.hpp"
+#include "sim_time.hpp"
 
-#define MUS_PATH "440hz.wav"
+#define MUS_PATH "soviet_national_anthem_1.wav"
 
 SDL_Window * gwin;
 SDL_Renderer * gren;
@@ -34,31 +35,59 @@ int main(int argc, char * argv[])
 
     sampler smpl (MUS_PATH);
 
-    std::vector<float> nums;
-    for(float i = 0.0f; i < smpl.getLenSecs() - 0.1f; i += 0.1f)
+    sim_time timer(0.0f);
+    bool done = false;
+    timer.setCur();
+    float start = 0.0f;
+    float end = 0.0f;
+
+    Mix_PlayChannel(-1, smpl.get(), 0);
+
+    SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
+
+    while(!done)
     {
+        timer.setCur();
+        start = end;
+        end = timer.getTime();
+
+        if(timer.getTime() > smpl.getLenSecs())
+            done = true;
+
+        SDL_Event e;
+        while(SDL_PollEvent(&e))
+        {
+            switch(e.type)
+            {
+            case SDL_QUIT:
+                done = true;
+                break;
+            default:
+                break;
+            }
+        }
+
         SDL_SetRenderDrawColor(gren, 0, 0, 0, 255);
         SDL_RenderClear(gren);
         SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
 
-        int px = 0;
-        int py = 0;
-        int cx = 0;
-        int cy = 0;
+        std::vector<float> nums = smpl.sampleAudio(start, end);
+        std::vector<SDL_Point> pts;
+        pts.reserve( nums.size() );
 
-        nums = smpl.sampleAudio(i, i + 0.1f);
-        for(int j = 0; j < nums.size(); ++j)
+        for(int i = 0; i < nums.size(); ++i)
         {
-            cx = (float)j / nums.size() * 1024.0f;
-            cy = nums[j] / 512.0f + 512.0f;
-            SDL_RenderDrawLine(gren, px, py, cx, cy);
-            px = cx;
-            py = cy;
+            SDL_Point pt;
+            pt.x = ((float)i / nums.size()) * 1024;
+            pt.y = nums[i] / 512.0f + 512;
+            pts.push_back(pt);
         }
+
+        SDL_Delay(10);
+
+        SDL_RenderDrawLines(gren, &pts[0], pts.size());
         SDL_RenderPresent(gren);
     }
-
-    Mix_PlayChannel(-1, smpl.get(), 0);
 
     std::cout << "Press enter to quit.\n";
     std::cin.get();

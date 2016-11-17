@@ -42,36 +42,39 @@ sampler::~sampler()
 
 std::vector<float> sampler::sampleAudio(const float _start, const float _end)
 {
-    int startSample = _start * s_sampleRate;
-    int endSample = _end * s_sampleRate;
+    int startSample = _start * s_sampleRate * s_channels;
+    int endSample = _end * s_sampleRate * s_channels;
     int lenSample = endSample - startSample;
 
-    std::cout << "Start is byte " << startSample << ", end is " << endSample << " therefore len is " << lenSample << '\n';
+    //std::cout << "Start is byte " << startSample << ", end is " << endSample << " therefore len is " << lenSample << '\n';
+    //std::cout << startSample / (s_sampleRate) << '\n';
 
     //Set to start of audio.
     Uint8 * start = m_snd->abuf;
+    //std::cout << "raw start " << (int)start;
     //Move up by n samples. NB 1 = 1 byte (size of Uint8).
     start += startSample;
+    //std::cout << " now " << (int)start << '\n';
 
     std::valarray<Complex> arr;
 
-    arr.resize( lenSample, {0.0, 0.0} );
+    arr.resize( lenSample, {0.0f, 0.0f} );
     for(int i = 0; i < arr.size(); ++i)
     {
-        Complex insert = {(float)m_snd->abuf[i], 0.0};
+        Complex insert = {(float)(m_snd->abuf[i]), 0.0f};
         arr[i] = insert;
     }
 
     fft(arr);
 
-    std::cout << "Sampling completed.\n";
+    //std::cout << "Sampling completed.\n";
 
     std::vector<float> ret;
     ret.reserve( arr.size() / 2 );
 
     for(int i = 0; i < arr.size() / 2; ++i)
     {
-        std::cout << i * ((float)s_sampleRate / arr.size()) << " Hz -> " << magnitude( arr[i] ) << '\n';
+        //std::cout << i * ((float)s_sampleRate / arr.size()) << " Hz -> " << magnitude( arr[i] ) << '\n';
         ret.push_back( magnitude( arr[i] ) );
     }
     return ret;
