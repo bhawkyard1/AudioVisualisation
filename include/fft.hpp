@@ -5,7 +5,7 @@
 #include <iostream>
 #include <valarray>
 
-const double PI = 3.141592653589793238460;
+const float PI = 3.141592653589793238460;
 
 typedef std::complex<float> Complex;
 typedef std::valarray<Complex> CArray;
@@ -14,6 +14,8 @@ typedef std::valarray<Complex> CArray;
 // Higher memory requirements and redundancy although more intuitive
 void fft(CArray& _x);
 
-float magnitude(Complex &_x);
+float magns(Complex &_x);
+
+float mag(Complex &_x);
 
 #endif
