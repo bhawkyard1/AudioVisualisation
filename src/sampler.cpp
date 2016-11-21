@@ -46,20 +46,24 @@ sampler::~sampler()
 std::vector<float> sampler::sampleAudio(const float _start, const float _end)
 {
 	int startSample = _start * s_sampleRate * s_channels;
-	int endSample = _end * s_sampleRate * s_channels;
+    int endSample = startSample + 1024;//_end * s_sampleRate * s_channels;
 	int lenSample = endSample - startSample;
 
-	//std::cout << "Start is byte " << startSample << ", end is " << endSample << " therefore len is " << lenSample << '\n';
-	//std::cout << startSample / (s_sampleRate) << '\n';
+    if(lenSample == 0)
+        return {};
 
-	/*for(int i = 0; i < 128; ++i)
+    //std::cout << "Start is byte " << startSample << ", end is " << endSample << " therefore len is " << lenSample << '\n';
+
+    /*for(int i = 0; i < 128; ++i)
 		std::cout << +m_snd->abuf[i] << '\n';
-	return {0.0f};*/
+    return {0.0f};*/
 
 	std::valarray<Complex> arr;
 
+    //std::cout << "p0\n";
 	arr.resize( lenSample, {0.0f, 0.0f} );
-	for(int i = 0; i < arr.size(); ++i)
+
+    for(size_t i = 0; i < arr.size(); ++i)
 	{
 		Complex insert = {static_cast<float>(m_snd->abuf[startSample + i]), 0.0f};
 		arr[i] = insert;
@@ -70,15 +74,17 @@ std::vector<float> sampler::sampleAudio(const float _start, const float _end)
 	std::vector<float> ret;
 	ret.reserve( arr.size() / 2 );
 
-	for(int i = 0; i < arr.size() / 2; ++i)
+    for(size_t i = 0; i < arr.size() / 2; ++i)
 	{
 		//std::cout << i * ((float)s_sampleRate / arr.size()) << " Hz -> " << mag( arr[i] ) << '\n';
 		ret.push_back( magns( arr[i] ) );
 	}
 
-	auto m = std::max_element( ret.begin() + 1, ret.end() );
-	int ind = std::distance( ret.begin(), m );
-	std::cout << ind * ((float)s_sampleRate / arr.size()) << " Hz -> " << *m << '\n';
+    /*auto m = std::max_element( ret.begin() + 1, ret.end() );
+    int ind = std::distance( ret.begin(), m );*/
+    //std::cout << ind * ((float)s_sampleRate / arr.size()) << " Hz -> " << *m << '\n';
+
+    //std::cout << "p1\n";
 
 	return ret;
 }

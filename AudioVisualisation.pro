@@ -14,11 +14,9 @@ INCLUDEPATH += $$PWD/include
 MOC_DIR = moc
 
 SOURCES += $$PWD/main.cpp \
-           $$PWD/src/*.cpp \
-           $$PWD/src/*.c
+           $$PWD/src/*.cpp
 
-HEADERS += $$PWD/include/*.hpp \
-           $$PWD/include/*.h
+HEADERS += $$PWD/include/*.hpp
 
 OTHER_FILES += readme.md
 
