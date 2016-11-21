@@ -51,18 +51,23 @@ OBJECTS_DIR   = obj/
 SOURCES       = main.cpp \
 		src/fft.cpp \
 		src/sampler.cpp \
-		src/sim_time.cpp 
+		src/sim_time.cpp \
+		src/kiss/kiss_fft.c 
 OBJECTS       = obj/main.o \
 		obj/fft.o \
 		obj/sampler.o \
-		obj/sim_time.o
+		obj/sim_time.o \
+		obj/kiss_fft.o
 DIST          = .qmake.stash \
 		AudioVisualisation.pro include/fft.hpp \
 		include/sampler.hpp \
-		include/sim_time.hpp main.cpp \
+		include/sim_time.hpp \
+		include/kiss/_kiss_fft_guts.h \
+		include/kiss/kiss_fft.h main.cpp \
 		src/fft.cpp \
 		src/sampler.cpp \
-		src/sim_time.cpp
+		src/sim_time.cpp \
+		src/kiss/kiss_fft.c
 QMAKE_TARGET  = AudioVisualisation
 DESTDIR       = 
 TARGET        = AudioVisualisation
@@ -405,8 +410,8 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
-	$(COPY_FILE) --parents include/fft.hpp include/sampler.hpp include/sim_time.hpp $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp src/fft.cpp src/sampler.cpp src/sim_time.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents include/fft.hpp include/sampler.hpp include/sim_time.hpp include/kiss/_kiss_fft_guts.h include/kiss/kiss_fft.h $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp src/fft.cpp src/sampler.cpp src/sim_time.cpp src/kiss/kiss_fft.c $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -462,6 +467,9 @@ obj/sampler.o: src/sampler.cpp include/sampler.hpp \
 
 obj/sim_time.o: src/sim_time.cpp include/sim_time.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/sim_time.o src/sim_time.cpp
+
+obj/kiss_fft.o: src/kiss/kiss_fft.c 
+	$(CC) -c $(CFLAGS) $(INCPATH) -o obj/kiss_fft.o src/kiss/kiss_fft.c
 
 ####### Install
 

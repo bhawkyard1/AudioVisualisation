@@ -4,8 +4,7 @@
 #include "sampler.hpp"
 
 #include "fft.hpp"
-
-//#include "kiss_fft.h"
+#include "kiss/kiss_fft.h"
 
 int sampler::s_sampleRate = 0;
 int sampler::s_channels = 2;
@@ -43,20 +42,36 @@ sampler::~sampler()
 	Mix_FreeChunk(m_snd);
 }
 
-std::vector<float> sampler::sampleAudio(const float _start, const float _end)
+std::vector<float> sampler::sampleAudio(const float _start, const int _width)
 {
 	int startSample = _start * s_sampleRate * s_channels;
-    int endSample = startSample + 1024;//_end * s_sampleRate * s_channels;
+    startSample += 30000;
+    //startSample -= _width / 2;
+    startSample = std::max(startSample, 0);
+    int endSample = startSample + _width;
 	int lenSample = endSample - startSample;
 
     if(lenSample == 0)
         return {};
 
-    //std::cout << "Start is byte " << startSample << ", end is " << endSample << " therefore len is " << lenSample << '\n';
-
-    /*for(int i = 0; i < 128; ++i)
-		std::cout << +m_snd->abuf[i] << '\n';
-    return {0.0f};*/
+    /*
+    //Create 'state buffer'. I have no idea why.
+    kiss_fft_cfg cfg = kiss_fft_alloc(lenSample, 0, NULL, NULL);
+    //Create an input array, kiss_fft_cpx has i and r members.
+    std::vector<kiss_fft_cpx> input;
+    input.reserve( lenSample );
+    //Add values to input.
+    for(size_t i = 0; i < input.size(); ++i)
+        input.push_back( {static_cast<float>(m_snd->abuf[startSample + i]), 0.0f} );
+    //Create and size output.
+    std::vector<kiss_fft_cpx> output;
+    output.reserve(input.size());
+    //Perform fft.
+    std::cout << "pre fft\n";
+    kiss_fft(cfg, &input[0], &output[0]);
+    std::cout << "post fft\n";
+    delete [] cfg;
+    */
 
 	std::valarray<Complex> arr;
 
@@ -69,15 +84,19 @@ std::vector<float> sampler::sampleAudio(const float _start, const float _end)
 		arr[i] = insert;
 	}
 
+    hanning(arr);
 	fft(arr);
 
 	std::vector<float> ret;
-	ret.reserve( arr.size() / 2 );
+    ret.reserve( arr.size() / 2 );
 
     for(size_t i = 0; i < arr.size() / 2; ++i)
 	{
 		//std::cout << i * ((float)s_sampleRate / arr.size()) << " Hz -> " << mag( arr[i] ) << '\n';
-		ret.push_back( magns( arr[i] ) );
+        float val = mag( arr[i] );
+        val = 10 * log10(val);
+        val /= lenSample;
+        ret.push_back( val );
 	}
 
     /*auto m = std::max_element( ret.begin() + 1, ret.end() );

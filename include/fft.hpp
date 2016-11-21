@@ -14,6 +14,8 @@ typedef std::valarray<Complex> CArray;
 // Higher memory requirements and redundancy although more intuitive
 void fft(CArray& _x);
 
+void hanning(CArray &_x);
+
 float magns(Complex &_x);
 
 float mag(Complex &_x);
