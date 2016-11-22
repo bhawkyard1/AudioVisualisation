@@ -83,7 +83,7 @@ int main(int argc, char * argv[])
 
         for(size_t i = 0; i < nums.size(); ++i)
         {
-            float mag = -nums[i] * 4096;
+            float mag = -nums[i] * 8192;
             SDL_Rect pt;
             pt.x = ((float)i / nums.size()) * 2048;
             pt.y = 512;

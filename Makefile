@@ -467,7 +467,8 @@ obj/fft.o: src/fft.cpp include/fft.hpp
 
 obj/sampler.o: src/sampler.cpp include/sampler.hpp \
 		include/fft.hpp \
-		include/kiss/kiss_fft.h
+		include/kiss/kiss_fft.h \
+		include/util.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/sampler.o src/sampler.cpp
 
 obj/sim_time.o: src/sim_time.cpp include/sim_time.hpp

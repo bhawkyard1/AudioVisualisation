@@ -33,6 +33,13 @@ sampler::sampler(const std::string _path)
         exit(EXIT_FAILURE);
     }
 
+    //Fill the buffer with the raw data now, converted to uint16s
+    m_buf.reserve( m_snd->alen / sizeof(uint16_t) );
+    for(size_t i = 0; i < m_snd->alen; i += sizeof(uint16_t))
+    {
+        m_buf.push_back( toi16( m_snd->abuf[i], m_snd->abuf[i + 1] ) );
+    }
+
     m_len = m_snd->alen / (float)(s_sampleRate * s_channels * 2.0f);
 
     std::cout << "Audio file has len " << m_snd->alen << " bytes.\nWith "
@@ -47,48 +54,30 @@ sampler::~sampler()
 
 std::vector<float> sampler::sampleAudio(const float _start, const int _width)
 {
+    //Find start index from time. Uint16 = 2 bytes.
     int startSample = _start * s_sampleRate * s_channels;
-    //startSample += 30000;
-    //startSample -= _width / 2;
+    //Clamp it to zero, just in case.
     startSample = std::max(startSample, 0);
+    //Get end sample using width.
     int endSample = startSample + _width;
+    //Get the difference between these (in current implementation this should be equal to _width).
     int lenSample = endSample - startSample;
 
     if(lenSample == 0)
         return {};
 
-    /*
-    //Create 'state buffer'. I have no idea why.
-    kiss_fft_cfg cfg = kiss_fft_alloc(lenSample, 0, NULL, NULL);
-    //Create an input array, kiss_fft_cpx has i and r members.
-    std::vector<kiss_fft_cpx> input;
-    input.reserve( lenSample );
-    //Add values to input.
-    for(size_t i = 0; i < input.size(); ++i)
-        input.push_back( {static_cast<float>(m_snd->abuf[startSample + i]), 0.0f} );
-    //Create and size output.
-    std::vector<kiss_fft_cpx> output;
-    output.reserve(input.size());
-    //Perform fft.
-    std::cout << "pre fft\n";
-    kiss_fft(cfg, &input[0], &output[0]);
-    std::cout << "post fft\n";
-    delete [] cfg;
-    */
-
+    //Create our complex buffer.
     std::valarray<Complex> arr;
 
-    //std::cout << "p0\n";
-    arr.resize( lenSample, {0.0f, 0.0f} );
+    //Number of u16s to look at.
+    arr.resize( lenSample / 2, {0.0f, 0.0f} );
 
     //Concatenates each pair of uint8s into a single uint16.
     //I don't know if this makes sense, but the buffer is all uint8s and the wav is 16-bit.
-    for(size_t i = 0; i < arr.size(); i += 2)
+    for(size_t i = 0; i < arr.size(); ++i)
     {
-        int16_t t = toi16( m_snd->abuf[startSample + i], m_snd->abuf[startSample + i + 1] );
-        //std::cout << "sample " << startSample + i << ", " << t << '\n';
-        Complex insert = {static_cast<float>(t), 0.0f};
-        arr[i] = insert;
+        Complex insert = {static_cast<float>( toi16(m_snd->abuf[startSample + 2 * i], m_snd->abuf[startSample + 2 * i + 1]) ), 0.0f};
+        arr[i / 2] = insert;
     }
 
     hanning(arr);
