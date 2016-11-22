@@ -19,7 +19,7 @@ public:
     std::vector<float> sampleAudio(const float _start, const int _width);
 private:
     Mix_Chunk * m_snd;
-    std::vector<uint16_t> m_buf;
+    std::vector<int16_t> m_buf;
     float m_len;
     static int s_sampleRate;
     static int s_channels;
