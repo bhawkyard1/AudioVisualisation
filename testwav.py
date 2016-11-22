@@ -1,11 +1,18 @@
 import struct
 import wave
 
-w = wave.open('silence.wav', 'r')
-for i in range(w.getnframes()):
-    ### read 1 frame and the position will updated ###
-    frame = w.readframes(1)
-    
-    unpacked_signed_value = struct.unpack("<h", frame)
+w = wave.open('soviet_national_anthem_0.wav', 'r')
+f = open('audiodat.txt', 'w')
 
-    print str(unpacked_signed_value)
+for i in range(0, w.getnframes()):
+	frame = w.readframes(1)
+        
+	data = struct.unpack("<i", frame)
+
+	print data[0]
+	
+	f.write( str(data[0]) + '\n' )
+	
+f.close()
+	
+	

@@ -7,7 +7,8 @@
 #include "sim_time.hpp"
 
 //#define MUS_PATH "tone_0.wav"
-#define MUS_PATH "soviet_national_anthem_0.wav"
+//#define MUS_PATH "soviet_national_anthem_0.wav"
+#define MUS_PATH "get_lucky.wav"
 
 SDL_Window * gwin;
 SDL_Renderer * gren;
@@ -78,16 +79,13 @@ int main(int argc, char * argv[])
         SDL_RenderClear(gren);
         SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
 
-        std::cout << "pre sample\n";
-        std::vector<float> nums = smpl.sampleAudio(start, 2049);
-        std::cout << "end sample\n";
-
+        std::vector<float> nums = smpl.sampleAudio(start, 16384);
 
         for(size_t i = 0; i < nums.size(); ++i)
         {
-            float mag = -nums[i] * 2048;
+            float mag = -nums[i] * 4096;
             SDL_Rect pt;
-            pt.x = ((float)i / nums.size()) * 1024;
+            pt.x = ((float)i / nums.size()) * 2048;
             pt.y = 512;
             pt.h = mag;
             pt.w = 1;

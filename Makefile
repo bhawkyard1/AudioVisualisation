@@ -52,21 +52,25 @@ SOURCES       = main.cpp \
 		src/fft.cpp \
 		src/sampler.cpp \
 		src/sim_time.cpp \
+		src/util.cpp \
 		src/kiss/kiss_fft.c 
 OBJECTS       = obj/main.o \
 		obj/fft.o \
 		obj/sampler.o \
 		obj/sim_time.o \
+		obj/util.o \
 		obj/kiss_fft.o
 DIST          = .qmake.stash \
 		AudioVisualisation.pro include/fft.hpp \
 		include/sampler.hpp \
 		include/sim_time.hpp \
+		include/util.hpp \
 		include/kiss/_kiss_fft_guts.h \
 		include/kiss/kiss_fft.h main.cpp \
 		src/fft.cpp \
 		src/sampler.cpp \
 		src/sim_time.cpp \
+		src/util.cpp \
 		src/kiss/kiss_fft.c
 QMAKE_TARGET  = AudioVisualisation
 DESTDIR       = 
@@ -410,8 +414,8 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
-	$(COPY_FILE) --parents include/fft.hpp include/sampler.hpp include/sim_time.hpp include/kiss/_kiss_fft_guts.h include/kiss/kiss_fft.h $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp src/fft.cpp src/sampler.cpp src/sim_time.cpp src/kiss/kiss_fft.c $(DISTDIR)/
+	$(COPY_FILE) --parents include/fft.hpp include/sampler.hpp include/sim_time.hpp include/util.hpp include/kiss/_kiss_fft_guts.h include/kiss/kiss_fft.h $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp src/fft.cpp src/sampler.cpp src/sim_time.cpp src/util.cpp src/kiss/kiss_fft.c $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -462,13 +466,18 @@ obj/fft.o: src/fft.cpp include/fft.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/fft.o src/fft.cpp
 
 obj/sampler.o: src/sampler.cpp include/sampler.hpp \
-		include/fft.hpp
+		include/fft.hpp \
+		include/kiss/kiss_fft.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/sampler.o src/sampler.cpp
 
 obj/sim_time.o: src/sim_time.cpp include/sim_time.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/sim_time.o src/sim_time.cpp
 
-obj/kiss_fft.o: src/kiss/kiss_fft.c 
+obj/util.o: src/util.cpp include/util.hpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/util.o src/util.cpp
+
+obj/kiss_fft.o: src/kiss/kiss_fft.c include/kiss/_kiss_fft_guts.h \
+		include/kiss/kiss_fft.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o obj/kiss_fft.o src/kiss/kiss_fft.c
 
 ####### Install
