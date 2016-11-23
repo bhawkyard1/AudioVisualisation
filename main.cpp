@@ -17,6 +17,8 @@ SDL_Renderer * gren;
 int g_WIN_WIDTH = 0;
 int g_WIN_HEIGHT = 0;
 
+typedef std::vector<SDL_Point> Line;
+
 int main(int argc, char * argv[])
 {
     std::cout << "Boo\n";
@@ -28,9 +30,9 @@ int main(int argc, char * argv[])
         exit(EXIT_FAILURE);
     }
 
-		getLargestWinDim(&g_WIN_WIDTH, &g_WIN_HEIGHT);
+    getLargestWinDim(&g_WIN_WIDTH, &g_WIN_HEIGHT);
 
-		gwin = SDL_CreateWindow("vis", 64, 64, g_WIN_WIDTH, g_WIN_HEIGHT, SDL_WINDOW_RESIZABLE);
+    gwin = SDL_CreateWindow("vis", 64, 64, g_WIN_WIDTH, g_WIN_HEIGHT, SDL_WINDOW_RESIZABLE);
     gren = SDL_CreateRenderer(gwin, -1, NULL);
     SDL_ShowWindow(gwin);
     SDL_SetRenderDrawColor(gren, 0, 0, 0, 255);
@@ -49,11 +51,14 @@ int main(int argc, char * argv[])
     float start = 0.0f;
     float end = 0.0f;
 
-		Mix_PlayChannel(-1, smpl.get(), 0);
+    Mix_PlayChannel(-1, smpl.get(), 0);
 
-		SDL_Delay(100);
+    SDL_Delay(100);
 
     SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
+
+    std::vector<Line> averageLines;
+    int averageLineMaxSize = 64;
 
     while(!done)
     {
@@ -87,64 +92,87 @@ int main(int argc, char * argv[])
         SDL_RenderClear(gren);
         SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
 
-				std::vector<float> nums = smpl.sampleAudio(start, 16384);
-				std::vector<SDL_Rect> rects;
-				rects.reserve( nums.size() );
+        std::vector<float> nums = smpl.sampleAudio(start, 8192);
+        std::vector<SDL_Rect> rects;
+        rects.reserve( nums.size() );
 
-				int rectWidths = ceil(static_cast<int>(g_WIN_WIDTH / (float)nums.size()));
+        int rectWidths = ceil(g_WIN_WIDTH / (float)nums.size());
 
         for(size_t i = 0; i < nums.size(); ++i)
         {
-						float mag = abs(-nums[i]) * 16384;
+            float mag = -nums[i] * 16384;
             SDL_Rect pt;
-						pt.x = ((float)i / nums.size()) * g_WIN_WIDTH;
-						pt.y = 512 - mag / 2;
-						pt.h = mag;
-						pt.w = rectWidths;
+            pt.x = ((float)i / nums.size()) * g_WIN_WIDTH;
+            pt.y = 512 - mag / 2;
+            pt.h = mag;
+            pt.w = rectWidths;
 
-						rects.push_back( pt );
+            rects.push_back( pt );
         }
 
-				for(auto &i : rects)
-				{
-					int col = clamp(static_cast<int>(abs(i.h) / 2), 0, 255);
-					SDL_SetRenderDrawColor(gren, col, col, col, 255);
-					SDL_RenderFillRect(gren, &i);
-				}
+        for(auto &i : rects)
+        {
+            int col = clamp(static_cast<int>(abs(i.h) / 2), 0, 255);
+            SDL_SetRenderDrawColor(gren, col, col, col, 255);
+            //SDL_RenderFillRect(gren, &i);
+        }
 
-				int rectSamples = 16;
-				std::vector<SDL_Point> averageLine;
-				averageLine.reserve( rects.size() );
-				for(size_t i = 0; i < rects.size(); ++i)
-				{
-					//Set min and max bounds for averaging.
-					int min = i - rectSamples / 2;
-					int max = i + rectSamples / 2;
-					//If min is too low (below 0) add to max.
-					max -= std::min(min, 0);
-					//If max is too high above rects.size(), sub diff from min.
-					min -= std::max((int)rects.size() - max, 0);
-					//Clip both to container extents.
-					min = clamp(min, 0, (int)rects.size());
-					max = clamp(max, 0, (int)rects.size());
+        int rectSamples = 16;
+        Line averageLine;
+        averageLine.reserve( rects.size() );
+        for(size_t i = 0; i < rects.size(); ++i)
+        {
+            //Set min and max bounds for averaging.
+            int min = i - rectSamples / 2;
+            int max = i + rectSamples / 2;
+            //If min is too low (below 0) add to max.
+            max -= std::min(min, 0);
+            //If max is too high above rects.size(), sub diff from min.
+            min -= std::max((int)rects.size() - max, 0);
+            //Clip both to container extents.
+            min = clamp(min, 0, (int)rects.size());
+            max = clamp(max, 0, (int)rects.size());
 
-					SDL_Point pt = {rects[i].x + rectWidths / 2, 0};
-					for(size_t j = min; j < max; ++j)
-					{
-						pt.y -= rects[j].h / 2;
-					}
-					pt.y /= max - min;
-					pt.y += 512;
-					averageLine.push_back( pt );
-				}
-				SDL_SetRenderDrawColor( gren, 255, 0, 0, 255 );
-				SDL_RenderDrawLines( gren, &averageLine[0], averageLine.size() );
+            SDL_Point pt = {rects[i].x + rectWidths / 2, 0};
+            for(size_t j = min; j < max; ++j)
+            {
+                pt.y += rects[j].h / 2;
+            }
+            pt.y /= max - min;
+            pt.y += 512;
+            averageLine.push_back( pt );
+        }
+        averageLines.insert( averageLines.begin(), averageLine );
+        if(averageLines.size() > averageLineMaxSize)
+            averageLines.pop_back();
+
+        SDL_SetRenderDrawColor( gren, 255, 0, 0, 255 );
+        //SDL_RenderDrawLines( gren, &averageLine[0], averageLine.size() );
+
+        averageLine.clear();
+        averageLine.assign( rects.size(), {0, 0} );
+        for(auto &line : averageLines)
+        {
+            for(size_t i = 0; i < line.size(); ++i)
+            {
+                averageLine[i].x += line[i].x;
+                averageLine[i].y += line[i].y;
+            }
+        }
+        for(auto &point : averageLine)
+        {
+            point.x /= averageLines.size();
+            point.y /= averageLines.size();
+        }
+
+        SDL_SetRenderDrawColor( gren, 255, 200, 200, 255 );
+        SDL_RenderDrawLines( gren, &averageLine[0], averageLine.size() );
 
         SDL_RenderPresent(gren);
     }
 
-		//std::cout << "Press enter to quit.\n";
-		//std::cin.get();
+    //std::cout << "Press enter to quit.\n";
+    //std::cin.get();
 
     Mix_CloseAudio();
 
