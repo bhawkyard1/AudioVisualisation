@@ -36,9 +36,8 @@ sampler::sampler(const std::string _path)
 	//Buffer length in bytes / bytes in  an i16 = number of i16s to represent the buffer
 	size_t s = m_snd->alen / sizeof(int16_t);
 	m_buf.reserve( s );
-	for(size_t i = 0; i < m_snd->alen; i += 2)
+	for(size_t i = 0; i < m_snd->alen; i += sizeof(int16_t))
 		m_buf.push_back( *((uint16_t *)&m_snd->abuf[i]) );
-	//m_buf.push_back( toi16( m_snd->abuf[i], m_snd->abuf[i + 1] ) );
 
 	m_len = m_snd->alen / (float)(s_sampleRate * s_channels * sizeof(int16_t));
 
@@ -87,15 +86,18 @@ std::vector<float> sampler::sampleAudio(const float _start, const int _width)
 	fft(arr);
 
 	std::vector<float> ret;
-	ret.reserve( arr.size() / 2 );
+	ret.reserve( arr.size() / 4 );
 
-	for(size_t i = 0; i < arr.size() / 2; ++i)
+	for(size_t i = 0; i < arr.size() / 4; ++i)
 	{
 		//std::cout << i * ((float)s_sampleRate / arr.size()) << " Hz -> " << mag( arr[i] ) << '\n';
-		float val = magns( arr[i] );
-		val = 20 * log10(val);
-		val /= len;
-		ret.push_back( val );
+		float l = magns( arr[i] );
+		float r = magns( arr[arr.size() / 2 - 1 - i]);
+		l = 20 * log10(l);
+		r = 20 * log10(r);
+		l /= len;
+		r /= len;
+		ret.push_back( (l + r) / 2 );
 	}
 
 	/*auto m = std::max_element( ret.begin() + 1, ret.end() );

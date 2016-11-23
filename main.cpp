@@ -9,10 +9,13 @@
 
 //#define MUS_PATH "tone_2.wav"
 //#define MUS_PATH "soviet_national_anthem_0.wav"
-#define MUS_PATH "do_i_wanna_know.wav"
+#define MUS_PATH "get_lucky.wav"
 
 SDL_Window * gwin;
 SDL_Renderer * gren;
+
+int g_WIN_WIDTH = 0;
+int g_WIN_HEIGHT = 0;
 
 int main(int argc, char * argv[])
 {
@@ -25,7 +28,9 @@ int main(int argc, char * argv[])
         exit(EXIT_FAILURE);
     }
 
-    gwin = SDL_CreateWindow("vis", 512, 100, 1024, 1024, SDL_WINDOW_RESIZABLE);
+		getLargestWinDim(&g_WIN_WIDTH, &g_WIN_HEIGHT);
+
+		gwin = SDL_CreateWindow("vis", 64, 64, g_WIN_WIDTH, g_WIN_HEIGHT, SDL_WINDOW_RESIZABLE);
     gren = SDL_CreateRenderer(gwin, -1, NULL);
     SDL_ShowWindow(gwin);
     SDL_SetRenderDrawColor(gren, 0, 0, 0, 255);
@@ -83,25 +88,63 @@ int main(int argc, char * argv[])
         SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
 
 				std::vector<float> nums = smpl.sampleAudio(start, 16384);
+				std::vector<SDL_Rect> rects;
+				rects.reserve( nums.size() );
+
+				int rectWidths = ceil(static_cast<int>(g_WIN_WIDTH / (float)nums.size()));
 
         for(size_t i = 0; i < nums.size(); ++i)
         {
-            float mag = -nums[i] * 8192;
+						float mag = abs(-nums[i]) * 16384;
             SDL_Rect pt;
-						pt.x = ((float)i / nums.size()) * 1024;
+						pt.x = ((float)i / nums.size()) * g_WIN_WIDTH;
 						pt.y = 512 - mag / 2;
-            pt.h = mag;
-            pt.w = 1;
+						pt.h = mag;
+						pt.w = rectWidths;
 
-						int col = clamp(static_cast<int>(abs(mag)), 0, 255);
-						SDL_SetRenderDrawColor(gren, col, col, col, 255);
-            SDL_RenderFillRect(gren, &pt);
+						rects.push_back( pt );
         }
+
+				for(auto &i : rects)
+				{
+					int col = clamp(static_cast<int>(abs(i.h) / 2), 0, 255);
+					SDL_SetRenderDrawColor(gren, col, col, col, 255);
+					SDL_RenderFillRect(gren, &i);
+				}
+
+				int rectSamples = 16;
+				std::vector<SDL_Point> averageLine;
+				averageLine.reserve( rects.size() );
+				for(size_t i = 0; i < rects.size(); ++i)
+				{
+					//Set min and max bounds for averaging.
+					int min = i - rectSamples / 2;
+					int max = i + rectSamples / 2;
+					//If min is too low (below 0) add to max.
+					max -= std::min(min, 0);
+					//If max is too high above rects.size(), sub diff from min.
+					min -= std::max((int)rects.size() - max, 0);
+					//Clip both to container extents.
+					min = clamp(min, 0, (int)rects.size());
+					max = clamp(max, 0, (int)rects.size());
+
+					SDL_Point pt = {rects[i].x + rectWidths / 2, 0};
+					for(size_t j = min; j < max; ++j)
+					{
+						pt.y -= rects[j].h / 2;
+					}
+					pt.y /= max - min;
+					pt.y += 512;
+					averageLine.push_back( pt );
+				}
+				SDL_SetRenderDrawColor( gren, 255, 0, 0, 255 );
+				SDL_RenderDrawLines( gren, &averageLine[0], averageLine.size() );
+
         SDL_RenderPresent(gren);
     }
 
-    std::cout << "Press enter to quit.\n";
-    std::cin.get();
+		//std::cout << "Press enter to quit.\n";
+		//std::cin.get();
 
     Mix_CloseAudio();
 

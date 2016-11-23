@@ -16,4 +16,6 @@ T clamp(T _in, T _lo, T _hi)
 	return _in;
 }
 
+void getLargestWinDim(int * _w, int * _h);
+
 #endif
