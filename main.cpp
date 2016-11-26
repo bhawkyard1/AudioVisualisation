@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
+#include <cmath>
 #include "fft.hpp"
 #include "sampler.hpp"
 #include "sim_time.hpp"
@@ -39,6 +40,8 @@ int main(int argc, char * argv[])
     SDL_RenderClear(gren);
     SDL_RenderPresent(gren);
 
+    SDL_SetRenderDrawBlendMode( gren, SDL_BLENDMODE_BLEND );
+
     std::cout << "Number of playback devices : " << SDL_GetNumAudioDevices( 0 ) << '\n';
 
     sampler::initialiseAudio( 44100, 2 );
@@ -58,7 +61,7 @@ int main(int argc, char * argv[])
     SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
 
     std::vector<Line> averageLines;
-    int averageLineMaxSize = 64;
+    int averageLineMaxSize = 2;
 
     while(!done)
     {
@@ -100,7 +103,7 @@ int main(int argc, char * argv[])
 
         for(size_t i = 0; i < nums.size(); ++i)
         {
-            float mag = -nums[i] * 16384;
+            float mag = -nums[i] * 8192;
             SDL_Rect pt;
             pt.x = ((float)i / nums.size()) * g_WIN_WIDTH;
             pt.y = 512 - mag / 2;
@@ -114,7 +117,7 @@ int main(int argc, char * argv[])
         {
             int col = clamp(static_cast<int>(abs(i.h) / 2), 0, 255);
             SDL_SetRenderDrawColor(gren, col, col, col, 255);
-            //SDL_RenderFillRect(gren, &i);
+            SDL_RenderFillRect(gren, &i);
         }
 
         int rectSamples = 16;
@@ -165,8 +168,20 @@ int main(int argc, char * argv[])
             point.y /= averageLines.size();
         }
 
-        SDL_SetRenderDrawColor( gren, 255, 200, 200, 255 );
-        SDL_RenderDrawLines( gren, &averageLine[0], averageLine.size() );
+        for(float i = 1.0; i > -1.0f; i -= 2.0f / g_WIN_HEIGHT)
+        {
+            Line newline = averageLine;
+            for(auto &pt : newline)
+            {
+                pt.y -= 512;
+                pt.y *= i;
+                pt.y += 512;
+            }
+
+            float col = (1.0f - std::abs(i)) * 255.0f;
+            SDL_SetRenderDrawColor( gren, 255, 255, 255, col );
+            SDL_RenderDrawLines( gren, &newline[0], newline.size() );
+        }
 
         SDL_RenderPresent(gren);
     }
