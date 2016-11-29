@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <numeric>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include <cmath>
@@ -10,7 +11,7 @@
 
 //#define MUS_PATH "tone_2.wav"
 //#define MUS_PATH "soviet_national_anthem_0.wav"
-#define MUS_PATH "get_lucky.wav"
+#define MUS_PATH "je_viens_de_la.wav"
 
 SDL_Window * gwin;
 SDL_Renderer * gren;
@@ -33,7 +34,7 @@ int main(int argc, char * argv[])
 
     getLargestWinDim(&g_WIN_WIDTH, &g_WIN_HEIGHT);
 
-    gwin = SDL_CreateWindow("vis", 64, 64, g_WIN_WIDTH, g_WIN_HEIGHT, SDL_WINDOW_RESIZABLE);
+		gwin = SDL_CreateWindow("vis", 4, 32, g_WIN_WIDTH, g_WIN_HEIGHT, SDL_WINDOW_RESIZABLE);
     gren = SDL_CreateRenderer(gwin, -1, NULL);
     SDL_ShowWindow(gwin);
     SDL_SetRenderDrawColor(gren, 0, 0, 0, 255);
@@ -95,17 +96,30 @@ int main(int argc, char * argv[])
         SDL_RenderClear(gren);
         SDL_SetRenderDrawColor(gren, 255, 0, 0, 255);
 
-        std::vector<float> nums = smpl.sampleAudio(start, 8192);
+				std::vector<float> nums = smpl.sampleAudio(start, 16384);
+
+				int averageSample = 16;
+				std::vector<float> averaged;
+				averaged.assign( nums.size() / averageSample, 0.0f );
+				for(size_t i = 0; i < nums.size() - averageSample; i += averageSample)
+				{
+					for(int j = 0; j < averageSample; ++j)
+						averaged[i / averageSample] += pow(nums[i + j], 0.99);
+				}
+
+				for(auto &i : averaged)
+					i /= (float)averageSample;
+
         std::vector<SDL_Rect> rects;
-        rects.reserve( nums.size() );
+				rects.reserve( averaged.size() );
 
-        int rectWidths = ceil(g_WIN_WIDTH / (float)nums.size());
+				int rectWidths = ceil(g_WIN_WIDTH / (float)averaged.size());
 
-        for(size_t i = 0; i < nums.size(); ++i)
+				for(size_t i = 0; i < averaged.size(); ++i)
         {
-            float mag = -nums[i] * 8192;
+						float mag = -averaged[i] * 16384;
             SDL_Rect pt;
-            pt.x = ((float)i / nums.size()) * g_WIN_WIDTH;
+						pt.x = ((float)i / averaged.size()) * g_WIN_WIDTH;
             pt.y = 512 - mag / 2;
             pt.h = mag;
             pt.w = rectWidths;
@@ -170,7 +184,7 @@ int main(int argc, char * argv[])
 
         for(float i = 1.0; i > -1.0f; i -= 2.0f / g_WIN_HEIGHT)
         {
-            Line newline = averageLine;
+						/*Line newline = averageLine;
             for(auto &pt : newline)
             {
                 pt.y -= 512;
@@ -180,7 +194,7 @@ int main(int argc, char * argv[])
 
             float col = (1.0f - std::abs(i)) * 255.0f;
             SDL_SetRenderDrawColor( gren, 255, 255, 255, col );
-            SDL_RenderDrawLines( gren, &newline[0], newline.size() );
+						SDL_RenderDrawLines( gren, &newline[0], newline.size() );*/
         }
 
         SDL_RenderPresent(gren);
